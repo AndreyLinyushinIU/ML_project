@@ -2,8 +2,8 @@
 
 From the project directory:
 
-* ```mkdir output```
-* ```mkdir pretrained-model``` and copy inside it pretrained model
-* ```python nst_generate.py monet.jpg  stone_style.jpg monet-stone_style.jpg --num_iterations 200 --learning_rate 2 --save_amount 20```
+* ```mkdir pretrained-model``` and copy inside it pretrained model from ML assignment 1.
+* You should have <em>private.txt</em> file at project root directory containing bot token.
+* ```python bot.py``` - process, supporting bot.
  
-First three parameters are input content image, input style image and name of resulting image. Other parameters are optional.
+The bot is accessible at Telegram: <em>@style_transferer_bot</em>, start it with <em>/generate_image</em> command.
