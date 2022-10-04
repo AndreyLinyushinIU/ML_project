@@ -17,24 +17,25 @@ class Model1:
             ('conv3_1', 0.2),
             ('conv4_1', 0.2),
             ('conv5_1', 0.2)]
+        self.sess = None
 
     def compute_content_cost(self, a_C, a_G):
-        C_shape, G_shape = list(tf.convert_to_tensor(a_C).shape.as_list()), list(tf.convert_to_tensor(a_G).shape.as_list())
-        a_C = tf.reshape(a_C, [C_shape[0], C_shape[1]*C_shape[2], C_shape[3]])
-        a_G = tf.reshape(a_G, [G_shape[0], G_shape[1]*G_shape[2], G_shape[3]])
-        J_content = 1 / (4 * C_shape[1] * C_shape[2] * C_shape[3]) * tf.reduce_sum(tf.math.squared_difference(a_C, a_G))
+        _, h, w, c = a_G.get_shape().as_list()
+        a_C = tf.reshape(a_C, [c, h * w])
+        a_G = tf.reshape(a_G, [c, h * w])
+        J_content = (tf.reduce_sum((a_C - a_G) ** 2)) / (4 * h * w * c)
         return J_content
 
     def gram_matrix(self, A):
         return tf.linalg.matmul(A, A, transpose_b=True)
 
     def compute_layer_style_cost(self, a_S, a_G):
-        S_shape, G_shape = tf.convert_to_tensor(a_S).shape.as_list(), tf.convert_to_tensor(a_G).shape.as_list()
-        a_S = tf.reshape(tf.convert_to_tensor(a_S), [S_shape[3], S_shape[1]*S_shape[2]])
-        a_G = tf.reshape(tf.convert_to_tensor(a_G), [G_shape[3], G_shape[1]*G_shape[2]])
-        S_gram = self.gram_matrix(a_S)
-        G_gram = self.gram_matrix(a_G)
-        J_style_layer = 1 / (4 * S_shape[1]**2 * S_shape[2]**2 * S_shape[3]**2) * tf.reduce_sum(tf.math.squared_difference(S_gram, G_gram))
+        _, h, w, c = a_G.get_shape().as_list()
+        a_S = tf.transpose(tf.reshape(a_S, [h * w, c]))
+        a_G = tf.transpose(tf.reshape(a_G, [h * w, c]))
+        G_S = self.gram_matrix(a_S)
+        G_G = self.gram_matrix(a_G)
+        J_style_layer = (tf.reduce_sum((G_S - G_G) ** 2)) / (4 * h * w * c * c)
         return J_style_layer
 
     def compute_style_cost(self, model, STYLE_LAYERS):
@@ -50,16 +51,14 @@ class Model1:
     def total_cost(self, J_content, J_style, alpha=10, beta=40):
         return alpha * J_content + beta * J_style
 
-    def get_res(self, c_img, s_img, learning_rate=2, num_iterations=200, save_amount=20):
+    def get_res(self, content_image, style_image, learning_rate=2, num_iterations=200, save_amount=20):
         tf.reset_default_graph()
         self.sess = tf.InteractiveSession()
 
-        content_image = c_img
         content_image = np.asarray(content_image.resize((CONFIG.IMAGE_WIDTH, CONFIG.IMAGE_HEIGHT), Image.ANTIALIAS))  # due to different sizes
         content_image = content_image[:, :, :3]  # For some png images. Can be removed!
         content_image = reshape_and_normalize_image(content_image)
 
-        style_image = s_img
         style_image = np.asarray(style_image.resize((CONFIG.IMAGE_WIDTH, CONFIG.IMAGE_HEIGHT), Image.ANTIALIAS))  # due to different sizes
         style_image = style_image[:, :, :3]  # For some png images. Can be removed!
         style_image = reshape_and_normalize_image(style_image)
@@ -86,10 +85,11 @@ class Model1:
 
             if i % 5 == 0:
                 print(str(i / num_iterations * 100) + "%...")
-                J1, J2, J3 = self.sess.run([J, J_content, J_style])
+                Jt, Jc, Js = self.sess.run([J, J_content, J_style])
                 if i % save_amount == 0:
                     save_image("output/" + str(i) + ".png", generated_image)
 
+        self.sess.close()
         return generated_image
 
 if __name__ == "__main__":
