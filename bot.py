@@ -31,5 +31,7 @@ def get_content_img(message, style_img_path):
     r_img = model1.get_res(Image.open(content_img_path), Image.open(style_img_path), learning_rate=2, num_iterations=200, save_amount=20)
     save_image('output/res.png', r_img)
     bot.send_photo(message.chat.id, open('output/res.png', "rb"))
+    os.remove(style_img_path)
+    os.remove(content_img_path)
 
 bot.infinity_polling()
