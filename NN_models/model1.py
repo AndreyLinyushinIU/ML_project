@@ -85,7 +85,7 @@ class Model1:
 
             if i % 5 == 0:
                 print(str(i / num_iterations * 100) + "%...")
-                Jt, Jc, Js = self.sess.run([J, J_content, J_style])
+                _, _, _ = self.sess.run([J, J_content, J_style])
                 if i % save_amount == 0:
                     save_image("output/" + str(i) + ".png", generated_image)
 
