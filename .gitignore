@@ -6,4 +6,5 @@ private.txt
 gif_generator.py
 /pretrained-model/**
 /temp
-/NN_models/__pycache__
+/models/__pycache__
+config.yml

@@ -1,17 +1,12 @@
 ### Part of this code is due to the MatConvNet team and is used to load the parameters of the pretrained VGG19 model in the notebook ###
 
-import os
-import sys
 import scipy.io
 import scipy.misc
-import matplotlib.pyplot as plt
-from matplotlib.pyplot import imshow
-from PIL import Image
-from nst_utils import *
 import imageio
 
 import numpy as np
 import tensorflow as tf
+
 
 class CONFIG:
     IMAGE_WIDTH = 400
@@ -19,8 +14,8 @@ class CONFIG:
     COLOR_CHANNELS = 3
     NOISE_RATIO = 0.6
     MEANS = np.array([123.68, 116.779, 103.939]).reshape((1, 1, 1, 3))
-    VGG_MODEL = 'pretrained-model/imagenet-vgg-verydeep-19.mat' # Pick the VGG 19-layer model by from the paper "Very Deep Convolutional Networks for Large-Scale Image Recognition".
     OUTPUT_DIR = 'output/'
+
 
 def load_vgg_model(path):
     """
@@ -124,7 +119,7 @@ def load_vgg_model(path):
 
     # Constructs the graph model.
     graph = {}
-    graph['input']   = tf.Variable(np.zeros((1, CONFIG.IMAGE_HEIGHT, CONFIG.IMAGE_WIDTH, CONFIG.COLOR_CHANNELS)), dtype = 'float32')
+    graph['input']    = tf.Variable(np.zeros((1, CONFIG.IMAGE_HEIGHT, CONFIG.IMAGE_WIDTH, CONFIG.COLOR_CHANNELS)), dtype='float32')
     graph['conv1_1']  = _conv2d_relu(graph['input'], 0, 'conv1_1')
     graph['conv1_2']  = _conv2d_relu(graph['conv1_1'], 2, 'conv1_2')
     graph['avgpool1'] = _avgpool(graph['conv1_2'])
@@ -149,7 +144,8 @@ def load_vgg_model(path):
 
     return graph
 
-def generate_noise_image(content_image, noise_ratio = CONFIG.NOISE_RATIO):
+
+def generate_noise_image(content_image, noise_ratio=CONFIG.NOISE_RATIO):
     """
     Generates a noisy image by adding random noise to the content_image
     """
@@ -178,7 +174,6 @@ def reshape_and_normalize_image(image):
 
 
 def save_image(path, image):
-
     # Un-normalize the image so that it looks good
     image = image + CONFIG.MEANS
 

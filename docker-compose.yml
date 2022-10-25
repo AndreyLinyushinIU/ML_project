@@ -1,0 +1,26 @@
+version: "3"
+
+services:
+  telegram-bot:
+    container_name: telegram-bot
+    build: .
+
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN}
+      REDIS_IP: redis-server
+
+    depends_on:
+      - redis-server
+
+  redis-server:
+    container_name: redis-server
+    image: redis
+
+    ports:
+    - 6379:6379
+
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
