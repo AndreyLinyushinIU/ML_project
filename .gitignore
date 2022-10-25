@@ -2,6 +2,7 @@
 /output
 /.idea
 /__pycache__
+**/__pycache__/
 private.txt
 gif_generator.py
 /pretrained-model/**
