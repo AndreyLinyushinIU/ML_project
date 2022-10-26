@@ -41,7 +41,8 @@ async def main():
         await dp.start_polling()
     finally:
         logger.info('stopping bot')
-        dp.bot.get_session().close()
+        session = await dp.bot.get_session()
+        await session.close()
 
 
 if __name__ == '__main__':

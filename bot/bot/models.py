@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from abc import ABC
-from typing import Generator
+from typing import Optional, Generator
 
 import numpy as np
 
@@ -30,9 +30,5 @@ class ModelsRegistry:
         for model in self._models.values():
             yield model
 
-    def get(self, model_id: str) -> Model | None:
-        try:
-            model_id = int(model_id)
-        except ValueError:
-            return None
+    def get(self, model_id: str) -> Optional[Model]:
         return self._models.get(model_id)
