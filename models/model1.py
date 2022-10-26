@@ -1,23 +1,35 @@
-import nst_utils
+import os
+
+from . import nst_utils
 import importlib
+
 importlib.reload(nst_utils)
-from nst_utils import *
+from .nst_utils import *
 import numpy as np
-import imageio.v2 as imageio
-os.add_dll_directory("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.7/bin")
+from PIL import Image
+# os.add_dll_directory("C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.7/bin")
 import tensorflow.compat.v1 as tf
+
 tf.disable_v2_behavior()
+
+
+PRETRAINED_MODELS_PATH = 'models/pretrained/'
 
 class Model1:
     def __init__(self):
-        self.model = load_vgg_model("pretrained-model/imagenet-vgg-verydeep-19.mat") # Model loading
+        self.name = 'Classical NST model'
+        self.model = None
+        self.sess = None
         self.STYLE_LAYERS = [
             ('conv1_1', 0.2),
             ('conv2_1', 0.2),
             ('conv3_1', 0.2),
             ('conv4_1', 0.2),
-            ('conv5_1', 0.2)]
-        self.sess = None
+            ('conv5_1', 0.2)
+        ]
+
+    def load(self):
+        self.model = load_vgg_model(f'{PRETRAINED_MODELS_PATH}/imagenet-vgg-verydeep-19.mat')
 
     def compute_content_cost(self, a_C, a_G):
         _, h, w, c = a_G.get_shape().as_list()
@@ -51,7 +63,7 @@ class Model1:
     def total_cost(self, J_content, J_style, alpha=10, beta=40):
         return alpha * J_content + beta * J_style
 
-    def get_res(self, content_image, style_image, learning_rate=2, num_iterations=200, save_amount=20):
+    def run(self, content_image, style_image, learning_rate=2, num_iterations=200, save_amount=20):
         tf.reset_default_graph()
         self.sess = tf.InteractiveSession()
 
@@ -63,7 +75,7 @@ class Model1:
         style_image = style_image[:, :, :3]  # For some png images. Can be removed!
         style_image = reshape_and_normalize_image(style_image)
 
-        self.model = load_vgg_model("pretrained-model/imagenet-vgg-verydeep-19.mat")
+        self.model = load_vgg_model(f"{PRETRAINED_MODELS_PATH}/imagenet-vgg-verydeep-19.mat")
         generated_image = generate_noise_image(content_image)
         self.sess.run(self.model['input'].assign(content_image))
         out = self.model['conv4_2']
@@ -91,6 +103,13 @@ class Model1:
 
         self.sess.close()
         return generated_image
+
+    def run_and_save(self, content_image, style_image, result_image_path: str):
+        if not os.path.exists('output'):
+            os.makedirs('output')
+        result = self.run(content_image, style_image)
+        save_image(result_image_path, result)
+
 
 if __name__ == "__main__":
     pass
