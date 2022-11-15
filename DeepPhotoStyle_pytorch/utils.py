@@ -35,14 +35,24 @@ def show_pic(tensor, title=None):
 
 
 def save_pic(tensor, i):
+    # ВРЕМЕННОЕ ОТКЛЮЧЕНИЕ СОХРАНЕНИЯ ПРОМЕЖУТОЧНЫХ РЕЗУЛЬТАТОВ
+    pass
+    # unloader = transforms.ToPILImage()  # tensor to PIL image
+    # image = tensor.cpu().clone()
+    # image = image.squeeze(0)
+    # image = unloader(image)
+    #
+    # if not os.path.exists("temp/"):
+    #     os.makedirs("temp")
+    # image.save("temp/temp_result_{}.png".format(i), "PNG")
+
+
+def save_image(tensor, path: str):
     unloader = transforms.ToPILImage()  # tensor to PIL image
     image = tensor.cpu().clone()
     image = image.squeeze(0)
     image = unloader(image)
-
-    if not os.path.exists("temp/"):
-        os.makedirs("temp")
-    image.save("temp/temp_result_{}.png".format(i), "PNG")
+    image.save(path)
 
 
 import torch

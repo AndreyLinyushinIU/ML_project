@@ -13,7 +13,7 @@ import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
 
-PRETRAINED_MODELS_PATH = 'models/pretrained/'
+PRETRAINED_MODELS_PATH = 'models/pretrained'
 
 class Model1:
     def __init__(self):
@@ -104,9 +104,11 @@ class Model1:
         self.sess.close()
         return generated_image
 
-    def run_and_save(self, content_image, style_image, result_image_path: str):
+    def run_and_save(self, content_image_path: str, style_image_path: str, result_image_path: str):
         if not os.path.exists('output'):
             os.makedirs('output')
+        content_image = Image.open(content_image_path)
+        style_image = Image.open(style_image_path)
         result = self.run(content_image, style_image)
         save_image(result_image_path, result)
 

@@ -32,10 +32,14 @@ def gen_mask(image_path):
 
 
 class Model2:
+
     def __init__(self):
+        self.name = 'DeepPhotoStyle'
+
+    def load(self):
         pass
 
-    def get_res(self, content_image_path, style_image_path, num_iterations=1, save_amount=20):
+    def get_res(self, content_image_path, style_image_path, num_iterations=2000, save_amount=20):
 
         print('Computing Laplacian matrix of content image')
         L = utils.compute_lap(content_image_path)
@@ -109,9 +113,12 @@ class Model2:
                                     style_mask_tensor, content_mask_tensor, L, num_steps=num_iterations,
                                     save_amount=save_amount)
         print('Style transfer completed')
-        utils.save_pic(output, 'deep_style_tranfer')
         print('Done!')
         return output
+
+    def run_and_save(self, content_image_path: str, style_image_path: str, result_image_path: str):
+        output = self.get_res(content_image_path, style_image_path, num_iterations=2)
+        utils.save_image(output, result_image_path)
 
 
 if __name__ == "__main__":

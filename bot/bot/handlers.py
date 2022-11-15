@@ -1,19 +1,16 @@
 import asyncio
 import logging
 import uuid
-from functools import partial
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 
 from aiogram import Dispatcher
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
-from PIL import Image
-
-from .states import UserStates
-from .models import ModelsRegistry, Model
 from .keyboards import ModelChoiceKeyboardMarkupFactory
-
+from .models import ModelsRegistry, Model
+from .states import UserStates
 
 logger = logging.getLogger('handlers')
 
@@ -103,10 +100,7 @@ async def _apply_style_transfer(model: Model, content_image_uuid, style_image_uu
     style_image_path = f'/tmp/{style_image_uuid}'
     result_image_path = f'/tmp/{uuid.uuid4().hex}.jpg'
 
-    content_image = Image.open(content_image_path)
-    style_image = Image.open(style_image_path)
-
-    run_func = partial(model.run_and_save, content_image, style_image, result_image_path)
+    run_func = partial(model.run_and_save, content_image_path, style_image_path, result_image_path)
     fut = asyncio.get_running_loop().run_in_executor(process_pool_executor, run_func)
     await fut
 
