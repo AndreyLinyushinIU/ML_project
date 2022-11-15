@@ -10,6 +10,7 @@ class Model(ABC):
     id: int
     name: str
     description: str
+    estimated_time_min: int
 
     def run_and_save(self, content_image, style_image: np.ndarray, result_image_path: str):
         raise NotImplementedError()

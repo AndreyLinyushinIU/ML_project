@@ -1,28 +1,15 @@
 import sys
+
 sys.path.append('seg')
 sys.path.append("DeepPhotoStyle_pytorch")
 sys.path.append("DeepPhotoStyle_pytorch/seg")
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-
-
-import torchvision.transforms as transforms
 import torchvision.models as models
-
-from PIL import Image
-
-import matplotlib.pyplot as plt
-
-# ------custom module----
-import config
-import utils
 
 from seg.segmentation import *
 from model import *
 from merge_index import *
+import config
 
 
 def gen_mask(image_path):
@@ -43,11 +30,17 @@ def gen_mask(image_path):
 
     return seg_result, height_, width_
 
+
 class Model2:
+
     def __init__(self):
+        self.name = 'DeepPhotoStyle'
+        self.estimated_time_min = 12
+
+    def load(self):
         pass
 
-    def get_res(self, content_image_path, style_image_path, num_iterations=200, save_amount=20):
+    def get_res(self, content_image_path, style_image_path, num_iterations=2000, save_amount=20):
 
         print('Computing Laplacian matrix of content image')
         L = utils.compute_lap(content_image_path)
@@ -78,12 +71,10 @@ class Model2:
         print('Save each mask as an image for debugging')
         for i in range(count):
             utils.save_pic(
-                torch.stack([style_mask_tensor[i, :, :], style_mask_tensor[i, :, :], style_mask_tensor[i, :, :]],
-                            dim=0),
+                torch.stack([style_mask_tensor[i, :, :], style_mask_tensor[i, :, :], style_mask_tensor[i, :, :]], dim=0),
                 'style_mask_' + str(i))
             utils.save_pic(
-                torch.stack([content_mask_tensor[i, :, :], content_mask_tensor[i, :, :], content_mask_tensor[i, :, :]],
-                            dim=0),
+                torch.stack([content_mask_tensor[i, :, :], content_mask_tensor[i, :, :], content_mask_tensor[i, :, :]], dim=0),
                 'content_mask_' + str(i))
 
         # Using GPU or CPU
@@ -120,12 +111,18 @@ class Model2:
         # print('input_img size: ', input_img.size())
         output = run_style_transfer(cnn, cnn_normalization_mean, cnn_normalization_std,
                                     content_img, style_img, input_img,
-                                    style_mask_tensor, content_mask_tensor, L, num_steps=num_iterations, save_amount=save_amount)
+                                    style_mask_tensor, content_mask_tensor, L, num_steps=num_iterations,
+                                    save_amount=save_amount)
         print('Style transfer completed')
-        utils.save_pic(output, 'deep_style_tranfer')
         print('Done!')
         return output
 
+    def run_and_save(self, content_image_path: str, style_image_path: str, result_image_path: str):
+        output = self.get_res(content_image_path, style_image_path, num_iterations=2)
+        utils.save_image(output, result_image_path)
+
+
 if __name__ == "__main__":
     m = Model2()
-    m.get_res("data/content/125a08324bd5c48dbf295cd8d54442fb.jpg", "data/style/9fa8bbef8064292c903c115a3335e8c0.jpg", num_iterations=2000, save_amount=20)
+    m.get_res("data/content/125a08324bd5c48dbf295cd8d54442fb.jpg", "data/style/9fa8bbef8064292c903c115a3335e8c0.jpg",
+              num_iterations=2, save_amount=20)

@@ -1,19 +1,20 @@
+import copy
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.nn.utils import clip_grad_norm_
 from torch.autograd import Variable
-import torchvision.models as models
-import copy
+from torch.nn.utils import clip_grad_norm_
 
 import config
-import cv2
 import utils
+
+
 class ContentLoss(nn.Module):
 
-    def __init__(self, target,):
+    def __init__(self, target, ):
         super(ContentLoss, self).__init__()
         # we 'detach' the target content from the tree used
         # to dynamically compute the gradient: this is a stated value,
@@ -22,7 +23,7 @@ class ContentLoss(nn.Module):
         self.target = target.detach()
 
     def forward(self, input):
-        #print('*************: ', input.size(), self.target.size())
+        # print('*************: ', input.size(), self.target.size())
         if input.size() != self.target.size():
             pass
         else:
@@ -36,12 +37,12 @@ def gram_matrix(input):
     # b = number of feature maps
     # (c, d) = dimensions of a f. map (N=c*d)
 
-    features = input.view(a*b, c*d)
+    features = input.view(a * b, c * d)
 
     G = torch.mm(features, features.t())  # compute the gram product
     # we 'normalize' the values of the gram matrix
     # by dividing by the number of element in each feature maps.
-    return G.div(a * b * c *d)
+    return G.div(a * b * c * d)
 
 
 class StyleLoss(nn.Module):
@@ -52,14 +53,14 @@ class StyleLoss(nn.Module):
         self.style_mask = style_mask.detach()
         self.content_mask = content_mask.detach()
 
-        #print(target_feature.type(), mask.type())
+        # print(target_feature.type(), mask.type())
         _, channel_f, height, width = target_feature.size()
         channel = self.style_mask.size()[0]
-        
+
         # ********
         xc = torch.linspace(-1, 1, width).repeat(height, 1)
         yc = torch.linspace(-1, 1, height).view(-1, 1).repeat(1, width)
-        grid = torch.cat((xc.unsqueeze(2), yc.unsqueeze(2)), 2) 
+        grid = torch.cat((xc.unsqueeze(2), yc.unsqueeze(2)), 2)
         grid = grid.unsqueeze_(0).to(config.device0)
         mask_ = F.grid_sample(self.style_mask.unsqueeze(0), grid, align_corners=True).squeeze(0)
         # ********       
@@ -73,13 +74,14 @@ class StyleLoss(nn.Module):
         for i in range(channel):
             if torch.mean(mask_[i, :, :]) > 0.0:
                 temp = target_feature_masked[i, :, :, :]
-                self.targets.append( gram_matrix(temp.unsqueeze(0)).detach()/torch.mean(mask_[i, :, :]) )
+                self.targets.append(gram_matrix(temp.unsqueeze(0)).detach() / torch.mean(mask_[i, :, :]))
             else:
-                self.targets.append( gram_matrix(temp.unsqueeze(0)).detach())
+                self.targets.append(gram_matrix(temp.unsqueeze(0)).detach())
+
     def forward(self, input_feature):
         self.loss = 0
         _, channel_f, height, width = input_feature.size()
-        #channel = self.content_mask.size()[0]
+        # channel = self.content_mask.size()[0]
         channel = len(self.targets)
         # ****
         xc = torch.linspace(-1, 1, width).repeat(height, 1)
@@ -88,40 +90,41 @@ class StyleLoss(nn.Module):
         grid = grid.unsqueeze_(0).to(config.device0)
         mask = F.grid_sample(self.content_mask.unsqueeze(0), grid, align_corners=True).squeeze(0)
         # ****
-        #mask = self.content_mask.data.resize_(channel, height, width).clone()
+        # mask = self.content_mask.data.resize_(channel, height, width).clone()
         input_feature_3d = input_feature.squeeze(0).clone()
         size_of_mask = (channel, channel_f, height, width)
         input_feature_masked = torch.zeros(size_of_mask, dtype=torch.float32).to(config.device0)
         for i in range(channel):
             input_feature_masked[i, :, :, :] = mask[i, :, :] * input_feature_3d
-        
+
         inputs_G = list()
         for i in range(channel):
             temp = input_feature_masked[i, :, :, :]
             mask_mean = torch.mean(mask[i, :, :])
             if mask_mean > 0.0:
-                inputs_G.append( gram_matrix(temp.unsqueeze(0))/mask_mean)
+                inputs_G.append(gram_matrix(temp.unsqueeze(0)) / mask_mean)
             else:
-                inputs_G.append( gram_matrix(temp.unsqueeze(0)))
+                inputs_G.append(gram_matrix(temp.unsqueeze(0)))
         for i in range(channel):
             mask_mean = torch.mean(mask[i, :, :])
             self.loss += F.mse_loss(inputs_G[i], self.targets[i]) * mask_mean
-        
+
         return input_feature
+
 
 class TVLoss(nn.Module):
 
     def __init__(self):
         super(TVLoss, self).__init__()
         self.ky = np.array([
-            [[0, 0, 0],[0, 1, 0],[0,-1, 0]],
-            [[0, 0, 0],[0, 1, 0],[0,-1, 0]],
-            [[0, 0, 0],[0, 1, 0],[0,-1, 0]]
+            [[0, 0, 0], [0, 1, 0], [0, -1, 0]],
+            [[0, 0, 0], [0, 1, 0], [0, -1, 0]],
+            [[0, 0, 0], [0, 1, 0], [0, -1, 0]]
         ])
         self.kx = np.array([
-            [[0, 0, 0],[0, 1,-1],[0, 0, 0]],
-            [[0, 0, 0],[0, 1,-1],[0, 0, 0]],
-            [[0, 0, 0],[0, 1,-1],[0, 0, 0]]
+            [[0, 0, 0], [0, 1, -1], [0, 0, 0]],
+            [[0, 0, 0], [0, 1, -1], [0, 0, 0]],
+            [[0, 0, 0], [0, 1, -1], [0, 0, 0]]
         ])
         self.conv_x = nn.Conv2d(1, 1, kernel_size=3, stride=1, padding=1, bias=False)
         self.conv_x.weight = nn.Parameter(torch.from_numpy(self.kx).float().unsqueeze(0).to(config.device0),
@@ -139,11 +142,12 @@ class TVLoss(nn.Module):
         # cv2.imwrite('gy.png', (gy*255.0).to('cpu').numpy().astype('uint8'))
         # exit()
 
-        self.loss = torch.sum(gx**2 + gy**2)/2.0
+        self.loss = torch.sum(gx ** 2 + gy ** 2) / 2.0
         return input
 
+
 class RealLoss(nn.Module):
-    
+
     def __init__(self, laplacian_m):
         super(RealLoss, self).__init__()
         self.L = Variable(laplacian_m.detach(), requires_grad=False)
@@ -153,11 +157,12 @@ class RealLoss(nn.Module):
         self.loss = 0
         for i in range(channel):
             temp = input[0, i, :, :]
-            temp = torch.reshape(temp, (1, height*width))
+            temp = torch.reshape(temp, (1, height * width))
             r = torch.mm(self.L, temp.t())
-            self.loss += torch.mm(temp , r)
-       
+            self.loss += torch.mm(temp, r)
+
         return input
+
 
 # create a module to normalize input image so we can easily put it in a
 # nn.Sequential
@@ -176,11 +181,13 @@ class Normalization(nn.Module):
 
 
 # desired depth layers to compute style/content losses:
-content_layers_default = ['conv4_2'] 
+content_layers_default = ['conv4_2']
 style_layers_default = ['conv1_1', 'conv2_1', 'conv3_1', 'conv4_1', 'conv5_1']
+
+
 def get_style_model_and_losses(cnn, normalization_mean, normalization_std,
                                style_img, content_img, style_mask, content_mask, laplacian_m,
-                               content_layer= content_layers_default,
+                               content_layer=content_layers_default,
                                style_layers=style_layers_default):
     cnn = copy.deepcopy(cnn)
 
@@ -191,7 +198,7 @@ def get_style_model_and_losses(cnn, normalization_mean, normalization_std,
     content_losses = []
     style_losses = []
     tv_losses = []
-    #real_losses = []
+    # real_losses = []
 
     # assuming that cnn is a nn.Sequential, so we make a new nn. Sequential
     # to put in modules that are supposed to be activated sequentially
@@ -204,7 +211,7 @@ def get_style_model_and_losses(cnn, normalization_mean, normalization_std,
     num_conv = 0
     content_num = 0
     style_num = 0
-    for layer in cnn.children():          # cnn feature without fully connected layers
+    for layer in cnn.children():  # cnn feature without fully connected layers
         if isinstance(layer, nn.Conv2d):
             num_conv += 1
             name = 'conv{}_{}'.format(num_pool, num_conv)
@@ -229,14 +236,14 @@ def get_style_model_and_losses(cnn, normalization_mean, normalization_std,
             # add content loss
             print('xixi: ', content_img.size())
             target = model(content_img).detach()
-            #print('content target size: ', target.size())
+            # print('content target size: ', target.size())
             content_loss = ContentLoss(target)
             model.add_module("content_loss_{}".format(content_num), content_loss)
             content_losses.append(content_loss)
             content_num += 1
         if name in style_layers:
             # add style loss:
-            #print('style_:', style_img.type())
+            # print('style_:', style_img.type())
             target_feature = model(style_img).detach()
             style_loss = StyleLoss(target_feature, style_mask.detach(), content_mask.detach())
             model.add_module("style_loss_{}".format(style_num), style_loss)
@@ -244,13 +251,13 @@ def get_style_model_and_losses(cnn, normalization_mean, normalization_std,
             style_num += 1
 
     # now we trim off the layers after the last content and style losses
-    for i in range(len(model)-1, -1, -1):
+    for i in range(len(model) - 1, -1, -1):
         if isinstance(model[i], ContentLoss) or isinstance(model[i], StyleLoss):
             break
 
-    model = model[:(i+1)]
+    model = model[:(i + 1)]
 
-    return model, style_losses, content_losses, tv_losses#, real_losses
+    return model, style_losses, content_losses, tv_losses  # , real_losses
 
 
 def get_input_optimizer(input_img):
@@ -258,6 +265,8 @@ def get_input_optimizer(input_img):
     optimizer = optim.LBFGS([input_img.requires_grad_()])
     # optimizer = optim.Adam([input_img.requires_grad_()])
     return optimizer
+
+
 '''
 def manual_grad(image, laplacian_m):
     img = image.squeeze(0)
@@ -270,6 +279,8 @@ def manual_grad(image, laplacian_m):
     loss += (grad * temp.t()).sum()
     return loss, None #2.*grad.reshape(img.size())
 '''
+
+
 def realistic_loss_grad(image, laplacian_m):
     img = image.squeeze(0)
     channel, height, width = img.size()
@@ -280,7 +291,7 @@ def realistic_loss_grad(image, laplacian_m):
         loss += torch.mm(img[i, :, :].reshape(1, -1), grad)
         grads.append(grad.reshape((height, width)))
     gradient = torch.stack(grads, dim=0).unsqueeze(0)
-    return loss, 2.*gradient
+    return loss, 2. * gradient
 
 
 def run_style_transfer(cnn, normalization_mean, normalization_std,
@@ -288,27 +299,28 @@ def run_style_transfer(cnn, normalization_mean, normalization_std,
                        num_steps=3000,
                        style_weight=1000000, content_weight=100, tv_weight=0.0001, rl_weight=1,
                        save_amount=50):
-
     """Run the style transfer."""
     print("Buliding the style transfer model..")
     model, style_losses, content_losses, tv_losses = get_style_model_and_losses(cnn,
-        normalization_mean, normalization_std, style_img, content_img, style_mask, content_mask, laplacian_m)
+                                                                                normalization_mean, normalization_std,
+                                                                                style_img, content_img, style_mask,
+                                                                                content_mask, laplacian_m)
     optimizer = get_input_optimizer(input_img)
 
     print("Optimizing...")
-    print('*'*20)
+    print('*' * 20)
     print("Style_weith: {} Content_weighti: {} \
            TV_loss_weight: {} Realistic_loss_weight: {}".format \
-           (style_weight, content_weight, tv_weight, rl_weight))
-    print('*'*20)
+              (style_weight, content_weight, tv_weight, rl_weight))
+    print('*' * 20)
     run = [0]
-    
-    best_loss = 1e10    
-    best_input = input_img.data 
+
+    best_loss = 1e10
+    best_input = input_img.data
 
     while run[0] <= num_steps:
 
-        def closure(): 
+        def closure():
             nonlocal best_loss
             nonlocal input_img
             nonlocal best_input
@@ -321,8 +333,7 @@ def run_style_transfer(cnn, normalization_mean, normalization_std,
             style_score = 0
             content_score = 0
             tv_score = 0
-            
-            
+
             for sl in style_losses:
                 style_score += sl.loss
 
@@ -331,10 +342,10 @@ def run_style_transfer(cnn, normalization_mean, normalization_std,
 
             for tl in tv_losses:
                 tv_score += tl.loss
-            
+
             style_score *= style_weight
             content_score *= content_weight
-            tv_score *= tv_weight    
+            tv_score *= tv_weight
 
             # Two stage optimaztion pipline    
             if run[0] > num_steps // 2:
@@ -353,7 +364,7 @@ def run_style_transfer(cnn, normalization_mean, normalization_std,
             else:
                 loss = style_score + content_score + tv_score
 
-                rl_score = torch.zeros(1) # Just to print
+                rl_score = torch.zeros(1)  # Just to print
 
                 if loss < best_loss and run[0] > 0:
                     # print(best_loss)
@@ -366,28 +377,28 @@ def run_style_transfer(cnn, normalization_mean, normalization_std,
                     best_loss = 1e10
 
             loss.backward()
-            
+
             # Gradient cliping deal with gradient exploding
             clip_grad_norm_(model.parameters(), 15.0)
-          
+
             run[0] += 1
             if run[0] % save_amount == 0:
                 print("run {}/{}:".format(run, num_steps))
                 print(str(run[0] / num_steps * 100) + "%...")
                 print('Style Loss: {:4f} Content Loss: {:4f} TV Loss: {:4f} real loss: {:4f}'.format(
-                   style_score.item(), content_score.item(), tv_score.item(), rl_score.item()))
+                    style_score.item(), content_score.item(), tv_score.item(), rl_score.item()))
 
                 print('Total Loss: ', loss.item())
-              
-                saved_img = input_img.clone() 
+
+                saved_img = input_img.clone()
                 saved_img.data.clamp_(0, 1)
                 utils.save_pic(saved_img, run[0])
             return loss
 
         optimizer.step(closure)
-              
+
     # a last corrention...
     input_img.data = best_input
     input_img.data.clamp_(0, 1)
-    
+
     return input_img
