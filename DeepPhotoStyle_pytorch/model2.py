@@ -123,11 +123,6 @@ class Model2:
                                     style_mask_tensor, content_mask_tensor, L, num_steps=num_iterations, save_amount=save_amount)
         print('Style transfer completed')
         utils.save_pic(output, 'deep_style_tranfer')
-        print()
-
-        # --------------------------
-        print('Postprocessing......')
-        utils.post_process(output, content_image_path)
         print('Done!')
         return output
 

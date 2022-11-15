@@ -111,7 +111,7 @@ class TrainDataset(torchdata.Dataset):
             # load image and label
             image_path = os.path.join(self.root_dataset, this_record['fpath_img'])
             segm_path = os.path.join(self.root_dataset, this_record['fpath_segm'])
-            img = imageio.imread(image_path)
+            img = imageio.imread(image_path, as_gray=False, pilmode="RGB")
             segm = imageio.imread(segm_path)
 
             assert(img.ndim == 3)
@@ -127,7 +127,7 @@ class TrainDataset(torchdata.Dataset):
 
             # note that each sample within a mini batch has different scale param
             img = cv2.resize(img, (batch_resized_size[i, 0], batch_resized_size[i, 1]), interpolation=cv2.INTER_LINEAR)
-            segm = cv2.resize(segm, (batch_resized_size[i, 0], batch_resized_size[i, 1]), interpolation=cv2.INTER_LINEAR)
+            segm = cv2.resize(segm, (batch_resized_size[i, 0], batch_resized_size[i, 1]), interpolation=cv2.INTER_NEAREST)
 
             # to avoid seg label misalignment
             segm_rounded_height = round2nearest_multiple(segm.shape[0], self.segm_downsampling_rate)
@@ -187,7 +187,7 @@ class ValDataset(torchdata.Dataset):
         # load image and label
         image_path = os.path.join(self.root_dataset, this_record['fpath_img'])
         segm_path = os.path.join(self.root_dataset, this_record['fpath_segm'])
-        img = imageio.imread(image_path)
+        img = imageio.imread(image_path, as_gray=False, pilmode="RGB")
         img = img[:, :, ::-1] # BGR to RGB!!!
         segm = imageio.imread(segm_path)
 
@@ -260,7 +260,7 @@ class TestDataset(torchdata.Dataset):
         this_record = self.list_sample[index]
         # load image and label
         image_path = this_record['fpath_img']
-        img = imageio.imread(image_path)
+        img = imageio.imread(image_path, as_gray=False, pilmode="RGB")
         img = img[:, :, ::-1] # BGR to RGB!!!
 
         ori_height, ori_width, _ = img.shape
