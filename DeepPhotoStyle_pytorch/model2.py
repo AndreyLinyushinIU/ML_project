@@ -35,6 +35,7 @@ class Model2:
 
     def __init__(self):
         self.name = 'DeepPhotoStyle'
+        self.estimated_time_min = 12
 
     def load(self):
         pass

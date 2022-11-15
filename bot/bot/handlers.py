@@ -29,7 +29,7 @@ GREETINGS_MESSAGE = """
 Hello! 👋 We are glad to see you in our Telegram bot.\n
 We offer a couple of style transfer models.
 To try one please type \\run command, choose the model, upload 2 images and then wait)
-We will send you the result in several seconds."""
+We will send you the result in several minutes."""
 
 
 async def start_command(message: types.Message):
@@ -89,6 +89,8 @@ async def uploaded_style_image(message: types.Message, state: FSMContext, models
         logger.error('invalid model_id in user data')
         await message.answer('Ooops something went wrong')
         return
+
+    await message.answer(f'Estimated waiting time: {model.estimated_time_min} minutes')
 
     result_image_path = await _apply_style_transfer(model, content_image_uuid, style_image_uuid)
     with open(result_image_path, 'rb') as image:

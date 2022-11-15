@@ -1,8 +1,8 @@
 import asyncio
 
 from aiogram import Bot, Dispatcher
-from aiogram.contrib.fsm_storage.redis import RedisStorage2
-# from aiogram.contrib.fsm_storage.memory import MemoryStorage
+# from aiogram.contrib.fsm_storage.redis import RedisStorage2
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 from models import Model1
 from DeepPhotoStyle_pytorch.model2 import Model2
@@ -22,8 +22,8 @@ async def main():
     logger = setup_logger()
 
     bot = Bot(args.bot_token, parse_mode='HTML')
-    storage = RedisStorage2(host=args.redis_ip, port=args.redis_port, db=args.redis_db)
-    # storage = MemoryStorage()
+    # storage = RedisStorage2(host=args.redis_ip, port=args.redis_port, db=args.redis_db)
+    storage = MemoryStorage()
     dp = Dispatcher(bot, storage=storage)
 
     model1 = Model1()
@@ -36,9 +36,15 @@ async def main():
     model2.load()
     logger.info('finished loading 2nd model')
 
+    model3 = Model3()
+    logger.info('loading 3rd model')
+    model2.load()
+    logger.info('finished loading 3rd model')
+
     models_registry = ModelsRegistry()
     models_registry.register(model1)
     models_registry.register(model2)
+    models_registry.register(model3)
 
     keyboard_markup_factory = ModelChoiceKeyboardMarkupFactory(models_registry)
     di_middleware = DIMiddleware(models_registry, keyboard_markup_factory)
