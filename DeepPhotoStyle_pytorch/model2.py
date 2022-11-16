@@ -128,4 +128,4 @@ class Model2:
 
 if __name__ == "__main__":
     m = Model2()
-    m.get_res("data/content/125a08324bd5c48dbf295cd8d54442fb.jpg", "data/style/9fa8bbef8064292c903c115a3335e8c0.jpg", num_iterations=2000, save_amount=20)
+    m.get_res("data/content/125a08324bd5c48dbf295cd8d54442fb.jpg", "data/style/9fa8bbef8064292c903c115a3335e8c0.jpg", num_iterations=2, save_amount=20)
