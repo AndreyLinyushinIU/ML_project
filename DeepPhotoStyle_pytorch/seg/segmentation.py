@@ -1,23 +1,10 @@
-# System libs
 import os
-import datetime
-import argparse
-from distutils.version import LooseVersion
-# Numerical libs
-import numpy as np
 import torch
 import torch.nn as nn
-from scipy.io import loadmat
-# Our libs
 from seg.dataset import TestDataset
 from seg.models import ModelBuilder, SegmentationModule
-from seg.utils import colorEncode
 from seg.lib.nn import user_scattered_collate, async_copy_to
-from seg.lib.utils import as_numpy, mark_volatile
 import seg.lib.utils.data as torchdata
-
-from PIL import Image
-import torchvision.transforms as transforms
 
 
 def segmentation(image_path):
@@ -30,14 +17,16 @@ def segmentation(image_path):
     net_encoder = builder.build_encoder(
         arch='resnet50_dilated8',
         fc_dim=2048,
-        weights=path_add + 'seg_checkpoint/encoder_epoch_20.pth')
+        weights=path_add + 'seg_checkpoint/encoder_epoch_20.pth'
+    )
 
     net_decoder = builder.build_decoder(
         arch='ppm_bilinear_deepsup',
         fc_dim=2048,
         num_class=150,
         weights=path_add + 'seg_checkpoint/decoder_epoch_20.pth',
-        use_softmax=True)
+        use_softmax=True
+    )
 
     crit = nn.NLLLoss(ignore_index=-1)
 
@@ -52,19 +41,20 @@ def segmentation(image_path):
     opt['padding_constant'] = 8
     opt['segm_downsampling_rate'] = 8
     dataset_val = TestDataset(
-        list_test, opt, max_sample=-1)
+        list_test, opt, max_sample=-1
+    )
     loader_val = torchdata.DataLoader(
         dataset_val,
         batch_size=1,
         shuffle=False,
         collate_fn=user_scattered_collate,
         num_workers=5,
-        drop_last=True)
+        drop_last=True
+    )
     for i, batch_data in enumerate(loader_val):
         # process data
         batch_data = batch_data[0]
-        segSize = (batch_data['img_ori'].shape[0],
-                   batch_data['img_ori'].shape[1])
+        segSize = (batch_data['img_ori'].shape[0], batch_data['img_ori'].shape[1])
 
         img_resized_list = batch_data['img_data']
 
@@ -77,6 +67,8 @@ def segmentation(image_path):
 
                 del feed_dict['img_ori']
                 del feed_dict['info']
+
+                # BE CAREFUL
                 feed_dict = async_copy_to(feed_dict, 0)
 
                 # forward pass

@@ -1,14 +1,15 @@
-from PIL import Image
-import torchvision.transforms as transforms
+import os
+
 import matplotlib.pyplot as plt
-from matting import *
+import torchvision.transforms as transforms
+from PIL import Image
+
 import config
-import scipy.ndimage as spi
+from matting import *
 from wls_filter import wls_filter
 
 
 def load_image(path, size):
-
     image = Image.open(path)
     if size is None:
         pass
@@ -25,50 +26,66 @@ def image_to_tensor(img):
 
 def show_pic(tensor, title=None):
     plt.figure()
-    unloader = transforms.ToPILImage() # tensor to PIL image
+    unloader = transforms.ToPILImage()  # tensor to PIL image
     image = tensor.cpu().clone()
     image = image.squeeze(0)
     image = unloader(image)
     plt.imshow(image)
     plt.title(title)
 
+
 def save_pic(tensor, i):
-    unloader = transforms.ToPILImage() # tensor to PIL image
+    # ВРЕМЕННОЕ ОТКЛЮЧЕНИЕ СОХРАНЕНИЯ ПРОМЕЖУТОЧНЫХ РЕЗУЛЬТАТОВ
+    # pass
+    unloader = transforms.ToPILImage()  # tensor to PIL image
     image = tensor.cpu().clone()
     image = image.squeeze(0)
     image = unloader(image)
+
+    if not os.path.exists("temp/"):
+        os.makedirs("temp")
     image.save("temp/temp_result_{}.png".format(i), "PNG")
+
+
+def save_image(tensor, path: str):
+    unloader = transforms.ToPILImage()  # tensor to PIL image
+    image = tensor.cpu().clone()
+    image = image.squeeze(0)
+    image = unloader(image)
+    image.save(path)
+
 
 import torch
 
 dtype = torch.cuda.FloatTensor
 dtype_long = torch.cuda.LongTensor
 
+
 def bilinear_interpolate_torch(im, x, y):
     print(im.size())
     x0 = torch.floor(x).type(dtype_long)
     x1 = x0 + 1
-    
+
     y0 = torch.floor(y).type(dtype_long)
     y1 = y0 + 1
 
-    x0 = torch.clamp(x0, 0, im.shape[1]-1)
-    x1 = torch.clamp(x1, 0, im.shape[1]-1)
-    y0 = torch.clamp(y0, 0, im.shape[0]-1)
-    y1 = torch.clamp(y1, 0, im.shape[0]-1)
-    
-    Ia = im[ y0, x0 ][0]
-    Ib = im[ y1, x0 ][0]
-    Ic = im[ y0, x1 ][0]
-    Id = im[ y1, x1 ][0]
-    
-    wa = (x1.type(dtype)-x) * (y1.type(dtype)-y)
-    wb = (x1.type(dtype)-x) * (y-y0.type(dtype))
-    wc = (x-x0.type(dtype)) * (y1.type(dtype)-y)
-    wd = (x-x0.type(dtype)) * (y-y0.type(dtype))
-    
-    
-    return torch.t(torch.t(Ia)*wa) + torch.t(torch.t(Ib)*wb) + torch.t(torch.t(Ic)*wc) + torch.t(torch.t(Id)*wd)
+    x0 = torch.clamp(x0, 0, im.shape[1] - 1)
+    x1 = torch.clamp(x1, 0, im.shape[1] - 1)
+    y0 = torch.clamp(y0, 0, im.shape[0] - 1)
+    y1 = torch.clamp(y1, 0, im.shape[0] - 1)
+
+    Ia = im[y0, x0][0]
+    Ib = im[y1, x0][0]
+    Ic = im[y0, x1][0]
+    Id = im[y1, x1][0]
+
+    wa = (x1.type(dtype) - x) * (y1.type(dtype) - y)
+    wb = (x1.type(dtype) - x) * (y - y0.type(dtype))
+    wc = (x - x0.type(dtype)) * (y1.type(dtype) - y)
+    wd = (x - x0.type(dtype)) * (y - y0.type(dtype))
+
+    return torch.t(torch.t(Ia) * wa) + torch.t(torch.t(Ib) * wb) + torch.t(torch.t(Ic) * wc) + torch.t(torch.t(Id) * wd)
+
 
 def nearest_interpolate(array, height, width):
     channel, ori_h, ori_w = array.shape
@@ -82,7 +99,7 @@ def nearest_interpolate(array, height, width):
             tw = int(j * ratio_w)
             target_array[:, i, j] = array[:, th, tw]
 
-    return target_array    
+    return target_array
 
 
 def compute_lap(path_img):
@@ -94,35 +111,34 @@ def compute_lap(path_img):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = 1.0 * image / 255.0
     h, w, _ = image.shape
-    const_size = np.zeros(shape=(h, w))
-    M = compute_laplacian(image)    
+
+    M = compute_laplacian(image)
     M = M.tocoo().astype(np.float32)
-    indices = torch.from_numpy(np.vstack((M.row, M.col))).long().cuda()
-    values = torch.from_numpy(M.data).cuda()
+    indices = torch.from_numpy(np.vstack((M.row, M.col))).long().to(config.device0)
+    values = torch.from_numpy(M.data).to(config.device0)
     shape = torch.Size(M.shape)
-    Ms = torch.sparse_coo_tensor(indices, values, shape, device=torch.device('cuda'))
+    Ms = torch.sparse_coo_tensor(indices, values, shape, device=config.device0)
     return Ms
 
+
 def post_process(tensor, origin_image_path):
-    unloader = transforms.ToPILImage() # tensor to PIL image
+    unloader = transforms.ToPILImage()  # tensor to PIL image
     image = tensor.cpu().clone()
     image = image.squeeze(0)
     image = unloader(image)  # PIL image RGB, range[0 ~ 255]
-    
+
     image = np.asarray(image)
-    
+
     image = np.flip(image, 2)  # RGB2BGR
-    
+
     guide_image = cv2.imread(origin_image_path, -1)
     guide_image = guide_image[:, :, :3]  # if alpha channel remove it
-    
+
     # To 0.0 ~ 1.0
     image = 1.0 * image / 255.0
     guide_image = 1.0 * guide_image / 255.0
 
     result = wls_filter(image, guide_image, alpha=1.2, Lambda=1.0) + \
-                guide_image - wls_filter(guide_image, guide_image, alpha=1.2, Lambda=1.0)
+             guide_image - wls_filter(guide_image, guide_image, alpha=1.2, Lambda=1.0)
     result = np.clip(result, 0.0, 1.0)
-    cv2.imwrite('final_result.png', (result*255.0).astype('uint8'))
-
-
+    cv2.imwrite('final_result.png', (result * 255.0).astype('uint8'))

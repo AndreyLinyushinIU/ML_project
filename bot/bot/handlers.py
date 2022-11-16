@@ -1,19 +1,16 @@
 import asyncio
 import logging
 import uuid
-from functools import partial
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 
 from aiogram import Dispatcher
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 
-from PIL import Image
-
-from .states import UserStates
-from .models import ModelsRegistry, Model
 from .keyboards import ModelChoiceKeyboardMarkupFactory
-
+from .models import ModelsRegistry, Model
+from .states import UserStates
 
 logger = logging.getLogger('handlers')
 
@@ -32,7 +29,7 @@ GREETINGS_MESSAGE = """
 Hello! 👋 We are glad to see you in our Telegram bot.\n
 We offer a couple of style transfer models.
 To try one please type \\run command, choose the model, upload 2 images and then wait)
-We will send you the result in several seconds."""
+We will send you the result in several minutes."""
 
 
 async def start_command(message: types.Message):
@@ -93,6 +90,8 @@ async def uploaded_style_image(message: types.Message, state: FSMContext, models
         await message.answer('Ooops something went wrong')
         return
 
+    await message.answer(f'Estimated waiting time: {model.estimated_time_min} minutes')
+
     result_image_path = await _apply_style_transfer(model, content_image_uuid, style_image_uuid)
     with open(result_image_path, 'rb') as image:
         await message.reply_photo(image)
@@ -103,10 +102,7 @@ async def _apply_style_transfer(model: Model, content_image_uuid, style_image_uu
     style_image_path = f'/tmp/{style_image_uuid}'
     result_image_path = f'/tmp/{uuid.uuid4().hex}.jpg'
 
-    content_image = Image.open(content_image_path)
-    style_image = Image.open(style_image_path)
-
-    run_func = partial(model.run_and_save, content_image, style_image, result_image_path)
+    run_func = partial(model.run_and_save, content_image_path, style_image_path, result_image_path)
     fut = asyncio.get_running_loop().run_in_executor(process_pool_executor, run_func)
     await fut
 

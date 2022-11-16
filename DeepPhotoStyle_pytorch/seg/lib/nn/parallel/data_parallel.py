@@ -9,6 +9,7 @@ from torch.nn.parallel._functions import Gather
 
 __all__ = ['UserScatteredDataParallel', 'user_scattered_collate', 'async_copy_to']
 
+
 def async_copy_to(obj, dev, main_stream=None):
     if torch.is_tensor(obj):
         obj = Variable(obj)
@@ -30,6 +31,7 @@ def dict_gather(outputs, target_device, dim=0):
     Gathers variables from different GPUs on a specified device
       (-1 means the CPU), with dictionary support.
     """
+
     def gather_map(outputs):
         out = outputs[0]
         if isinstance(out, Variable):
@@ -43,6 +45,7 @@ def dict_gather(outputs, target_device, dim=0):
             return {k: gather_map([o[k] for o in outputs]) for k in out}
         elif isinstance(out, collections.Sequence):
             return type(out)(map(gather_map, zip(*outputs)))
+
     return gather_map(outputs)
 
 
