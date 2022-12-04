@@ -1,4 +1,5 @@
 import asyncio
+import torch
 
 from aiogram import Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -55,6 +56,11 @@ async def main():
     di_middleware = DIMiddleware(models_registry, keyboard_markup_factory)
     dp.setup_middleware(di_middleware)
     register_handlers(dp, keyboard_markup_factory)
+
+    if torch.cuda.is_available():
+        logger.info('using GPU to run models')
+    else:
+        logger.info('using CPU to run models')
 
     logger.info('starting bot')
     try:

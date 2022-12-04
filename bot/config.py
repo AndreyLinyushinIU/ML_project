@@ -7,6 +7,7 @@ def setup_args_parser() -> ArgumentParser:
         config_file_parser_class=YAMLConfigFileParser,
         args_for_setting_config_path=['-c', '--config-file'],
         config_arg_help_message='Config file path',
+        auto_env_var_prefix='STB_',
         formatter_class=ArgumentDefaultsHelpFormatter
     )
 
