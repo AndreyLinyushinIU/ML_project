@@ -7,6 +7,7 @@ def setup_args_parser() -> ArgumentParser:
         config_file_parser_class=YAMLConfigFileParser,
         args_for_setting_config_path=['-c', '--config-file'],
         config_arg_help_message='Config file path',
+        auto_env_var_prefix='STB_',
         formatter_class=ArgumentDefaultsHelpFormatter
     )
 
@@ -14,6 +15,7 @@ def setup_args_parser() -> ArgumentParser:
     bot_group.add_argument('--bot-token', type=str, help='Telegram bot token (from @BotFather)')
 
     redis_group = parser.add_argument_group('redis')
+    redis_group.add_argument('--redis-enabled', type=bool, default=False, help='Flag to enable Redis storage')
     redis_group.add_argument('--redis-ip', type=str, default='localhost', help='IP of redis server')
     redis_group.add_argument('--redis-port', type=int, default=6379, help='Port of redis server')
     redis_group.add_argument('--redis-db', type=int, default=1, help='Redis database number')

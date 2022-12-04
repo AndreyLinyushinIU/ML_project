@@ -5,8 +5,15 @@
 **/__pycache__/
 gif_generator.py
 /pretrained-model/**
-/models/pretrained
 /temp
+
+/data/files/imagenet-vgg-verydeep-19.mat
+/data/files/encoder_epoch_20.pth
+/data/files/decoder_epoch_20.pth
+
+/models/pretrained/imagenet-vgg-verydeep-19.mat
+/DeepPhotoStyle_pytorch/seg_checkpoint/decoder_epoch_20.pth
+/DeepPhotoStyle_pytorch/seg_checkpoint/encoder_epoch_20.pth
 
 /DeepPhotoStyle_pytorch/__pycache__
 /DeepPhotoStyle_pytorch/seg/__pycache__
@@ -18,8 +25,6 @@ gif_generator.py
 /DeepPhotoStyle_pytorch/seg/models/__pycache__
 /DeepPhotoStyle_pytorch/*.png
 /DeepPhotoStyle_pytorch/*.jpg
-/DeepPhotoStyle_pytorch/seg_checkpoint/decoder_epoch_20.pth
-/DeepPhotoStyle_pytorch/seg_checkpoint/encoder_epoch_20.pth
 
 /NN_models/__pycache__
 /models/__pycache__

@@ -6,8 +6,9 @@ services:
     build: .
 
     environment:
-      BOT_TOKEN: ${BOT_TOKEN}
-      REDIS_IP: redis-server
+      STB_BOT_TOKEN: ${STB_BOT_TOKEN}
+      STB_REDIS_ENABLED: ${STB_REDIS_ENABLED}
+      STB_REDIS_IP: redis-server
 
     depends_on:
       - redis-server
