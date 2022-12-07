@@ -29,3 +29,6 @@ gif_generator.py
 /NN_models/__pycache__
 /models/__pycache__
 config.yml
+
+ansible/vars.yml
+ansible/id_ed25519
