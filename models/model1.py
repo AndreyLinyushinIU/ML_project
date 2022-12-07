@@ -17,7 +17,8 @@ PRETRAINED_MODELS_PATH = 'models/pretrained'
 
 class Model1:
     def __init__(self):
-        self.name = 'vgg-16'
+        self.name = 'vgg-19'
+        self.estimated_time_min = 3
         self.model = None
         self.sess = None
         self.STYLE_LAYERS = [
@@ -27,7 +28,6 @@ class Model1:
             ('conv4_1', 0.2),
             ('conv5_1', 0.2)
         ]
-        self.estimated_time_min = 5
 
     def load(self):
         self.model = load_vgg_model(f'{PRETRAINED_MODELS_PATH}/imagenet-vgg-verydeep-19.mat')

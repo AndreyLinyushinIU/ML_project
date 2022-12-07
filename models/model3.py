@@ -13,8 +13,8 @@ from torchvision.utils import save_image
 
 class Model3:
     def __init__(self):
-        self.name = "vgg-19"
-        self.estimated_time_min = 4
+        self.name = "vgg-16"
+        self.estimated_time_min = 2
 
     def load(self):
         pass
