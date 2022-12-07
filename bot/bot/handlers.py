@@ -15,9 +15,9 @@ from .states import UserStates
 logger = logging.getLogger('handlers')
 
 executors = {
-    1: ThreadPoolExecutor(max_workers=3),
-    2: ThreadPoolExecutor(max_workers=1),
-    3: ThreadPoolExecutor(max_workers=3)
+    '1': ThreadPoolExecutor(max_workers=3),
+    '2': ThreadPoolExecutor(max_workers=1),
+    '3': ThreadPoolExecutor(max_workers=3)
 }
 
 
