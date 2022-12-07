@@ -14,7 +14,11 @@ from .states import UserStates
 
 logger = logging.getLogger('handlers')
 
-process_pool_executor = ThreadPoolExecutor(max_workers=10)
+executors = {
+    1: ThreadPoolExecutor(max_workers=3),
+    2: ThreadPoolExecutor(max_workers=1),
+    3: ThreadPoolExecutor(max_workers=3)
+}
 
 
 def register_handlers(dp: Dispatcher, keyboard_markup_factory: ModelChoiceKeyboardMarkupFactory):
@@ -92,7 +96,13 @@ async def uploaded_style_image(message: types.Message, state: FSMContext, models
 
     await message.answer(f'Estimated waiting time: {model.estimated_time_min} minutes')
 
-    result_image_path = await _apply_style_transfer(model, content_image_uuid, style_image_uuid)
+    try:
+        result_image_path = await _apply_style_transfer(model, content_image_uuid, style_image_uuid)
+    except RuntimeError as e:
+        logger.exception(e)
+        await message.answer('Sorry, something went wrong')
+        return
+
     with open(result_image_path, 'rb') as image:
         await message.reply_photo(image)
 
@@ -103,7 +113,10 @@ async def _apply_style_transfer(model: Model, content_image_uuid, style_image_uu
     result_image_path = f'/tmp/{uuid.uuid4().hex}.jpg'
 
     run_func = partial(model.run_and_save, content_image_path, style_image_path, result_image_path)
-    fut = asyncio.get_running_loop().run_in_executor(process_pool_executor, run_func)
+    executor = executors.get(model.id)
+    if executor is None:
+        raise RuntimeError(f'no executor for model {model.id}')
+    fut = asyncio.get_running_loop().run_in_executor(executor, run_func)
     await fut
 
     return result_image_path

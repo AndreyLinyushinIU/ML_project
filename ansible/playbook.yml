@@ -1,0 +1,12 @@
+---
+
+- name: Gather facts
+  hosts: yc-server
+  gather_facts: true
+
+- name: Download static data
+  hosts: yc-server
+  gather_facts: no
+  become: yes
+  roles:
+    - download-static-data

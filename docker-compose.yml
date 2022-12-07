@@ -10,6 +10,11 @@ services:
       STB_REDIS_ENABLED: ${STB_REDIS_ENABLED}
       STB_REDIS_IP: redis-server
 
+    volumes:
+      - ${PWD}/data/files/imagenet-vgg-verydeep-19.mat:/opt/tg/models/pretrained/imagenet-vgg-verydeep-19.mat
+      - ${PWD}/data/files/decoder_epoch_20.pth:/opt/tg/DeepPhotoStyle_pytorch/seg_checkpoint/decoder_epoch_20.pth
+      - ${PWD}/data/files/encoder_epoch_20.pth:/opt/tg/DeepPhotoStyle_pytorch/seg_checkpoint/encoder_epoch_20.pth
+
     depends_on:
       - redis-server
 

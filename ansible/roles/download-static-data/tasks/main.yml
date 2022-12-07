@@ -1,0 +1,23 @@
+---
+
+- name: Create data directory if it does not exist
+  file:
+    path: '{{ DATA_DIR }}'
+    state: directory
+    mode: '0755'
+
+- name: Download files
+  get_url:
+    url: '{{ item.url }}'
+    dest: '{{ DATA_DIR }}'
+    mode: '06440'
+  with_items:
+    - url: http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50dilated-ppm_deepsup/encoder_epoch_20.pth
+    - url: http://sceneparsing.csail.mit.edu/model/pytorch/ade20k-resnet50dilated-ppm_deepsup/decoder_epoch_20.pth
+
+- name: Download files (bad certificate)
+  get_url:
+    dest: '{{ DATA_DIR }}'
+    mode: '06440'
+    validate_certs: false
+    url: https://www.vlfeat.org/matconvnet/models/imagenet-vgg-verydeep-19.mat
